@@ -24,9 +24,14 @@ function Test-RuntimeComplete([string]$Directory) {
 }
 
 function Get-TreeManifest([string]$Directory) {
+  $base = [IO.Path]::GetFullPath($Directory).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
   $files = Get-ChildItem -LiteralPath $Directory -Recurse -File -Force | ForEach-Object {
+    $fullPath = [IO.Path]::GetFullPath($_.FullName)
+    if (-not $fullPath.StartsWith($base, [StringComparison]::OrdinalIgnoreCase)) {
+      throw "File escaped runtime tree while verifying: $fullPath"
+    }
     [pscustomobject]@{
-      RelativePath = $_.FullName.Substring($Directory.Length).TrimStart('\')
+      RelativePath = $fullPath.Substring($base.Length)
       Length = $_.Length
       Hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
     }
@@ -35,9 +40,14 @@ function Get-TreeManifest([string]$Directory) {
 }
 
 function Copy-TreeBytes([string]$Source, [string]$Destination) {
+  $sourceBase = [IO.Path]::GetFullPath($Source).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
   New-Item -ItemType Directory -Path $Destination -Force | Out-Null
   Get-ChildItem -LiteralPath $Source -Recurse -File -Force | ForEach-Object {
-    $relative = $_.FullName.Substring($Source.Length).TrimStart('\')
+    $fullPath = [IO.Path]::GetFullPath($_.FullName)
+    if (-not $fullPath.StartsWith($sourceBase, [StringComparison]::OrdinalIgnoreCase)) {
+      throw "File escaped package runtime tree while copying: $fullPath"
+    }
+    $relative = $fullPath.Substring($sourceBase.Length)
     $target = Join-Path $Destination $relative
     New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
     $inputStream = [IO.File]::OpenRead($_.FullName)
