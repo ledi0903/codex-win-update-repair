@@ -1,0 +1,24 @@
+name: Windows PowerShell tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run repair script fixture test
+        shell: powershell
+        run: .\tests\Test-RepairScript.ps1
+      - name: Parse all PowerShell scripts
+        shell: powershell
+        run: |
+          $files = Get-ChildItem . -Recurse -Filter *.ps1
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count) { $errors | Format-List; throw "Syntax errors in $($file.FullName)" }
+          }

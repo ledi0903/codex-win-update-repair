@@ -1,0 +1,22 @@
+{
+  "name": "codex-win-update-repair",
+  "version": "0.1.0",
+  "description": "Diagnose and repair incomplete Windows Codex Desktop runtime extraction after AppX updates.",
+  "author": {
+    "name": "ledi0903",
+    "url": "https://github.com/ledi0903"
+  },
+  "repository": "https://github.com/ledi0903/codex-win-update-repair",
+  "license": "MIT",
+  "keywords": ["codex", "windows", "appx", "runtime", "repair"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Codex Win Update Repair",
+    "shortDescription": "Repair incomplete Windows runtime staging after Codex updates.",
+    "longDescription": "A Codex skill plus an independent PowerShell utility for auditing and safely repairing the bundled Windows runtime after a Microsoft Store update. The utility can run without Codex being open.",
+    "developerName": "ledi0903",
+    "category": "Developer tools",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": ["Audit and repair my Windows Codex runtime"]
+  }
+}
