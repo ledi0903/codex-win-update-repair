@@ -59,6 +59,20 @@ function Copy-TreeBytes([string]$Source, [string]$Destination) {
   }
 }
 
+function Start-CodexDesktop([string]$PackageFamilyName) {
+  if (-not $PackageFamilyName) { throw 'Cannot launch Codex because the AppX package identity is unavailable.' }
+  Start-Process explorer.exe -ArgumentList "shell:AppsFolder\$PackageFamilyName!App"
+  $window = $null
+  for ($i = 0; $i -lt 30; $i++) {
+    Start-Sleep -Seconds 1
+    $window = Get-Process ChatGPT -ErrorAction SilentlyContinue |
+      Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+    if ($window) { break }
+  }
+  if ($window) { Write-Output "launch=visible pid=$($window.Id) hwnd=$($window.MainWindowHandle)" }
+  else { Write-Output 'launch=not-yet-visible; runtime check succeeded, but window startup was not confirmed within 30 seconds.' }
+}
+
 if (-not $RuntimeRoot) { $RuntimeRoot = Join-Path $env:LOCALAPPDATA 'OpenAI\Codex\runtimes\cua_node' }
 if (-not $PackageRoot) {
   $package = Get-AppxPackage -Name 'OpenAI.Codex' | Sort-Object Version -Descending | Select-Object -First 1
@@ -87,7 +101,7 @@ $complete = Get-ChildItem -LiteralPath $RuntimeRoot -Directory -Force -ErrorActi
   Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($complete) {
   Write-Output "runtime=complete path=$($complete.FullName)"
-  if ($Launch -and $package) { Start-Process explorer.exe -ArgumentList "shell:AppsFolder\$packageFamilyName!App" }
+  if ($Launch) { Start-CodexDesktop $packageFamilyName }
   exit 0
 }
 
@@ -137,9 +151,5 @@ catch {
 }
 
 if ($Launch -and $package) {
-  Start-Process explorer.exe -ArgumentList "shell:AppsFolder\$packageFamilyName!App"
-  Start-Sleep -Seconds 5
-  $window = Get-Process ChatGPT -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
-  if ($window) { Write-Output "launch=visible pid=$($window.Id) hwnd=$($window.MainWindowHandle)" }
-  else { Write-Output 'launch=not-yet-visible; runtime repair succeeded, but desktop window needs separate verification.' }
+  Start-CodexDesktop $packageFamilyName
 }
